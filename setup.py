@@ -6,16 +6,14 @@ with open("README.md", "r") as fh:
 setuptools.setup(
     name="basic_model",
     version="0.0.1",
-    author="Cedd Burge",
-    author_email="ceddlyburge@gmail.com",
-    description="A function that returns 'world'",
+    author="(C) 2019 SMART CODE, razvoj aplikacij, d.o.o.",
+    author_email="info@smartcode.eu",
+    description="Serialization and deserialization made simple",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/ceddlyburge/python_world",
+    url="https://github.com/smart-code-eu/basic_model",
     packages=setuptools.find_packages(),
     classifiers=[
-        "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: MIT License",
-        "Operating System :: OS Independent",
+        "Programming Language :: Python :: 3"
     ]
 )
