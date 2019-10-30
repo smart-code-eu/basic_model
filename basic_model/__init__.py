@@ -18,15 +18,19 @@
 #
 
 import datetime
+import importlib
 import pprint
+import re
+
 import typing
+from typing import ForwardRef
 
 import six
 
 T = typing.TypeVar('T')
 
 
-def _deserialize(data, klass):
+def _deserialize(data, klass, models_module=None):
     """Deserializes dict, list, str into an object.
 
     :param data: dict, list or str.
@@ -47,11 +51,11 @@ def _deserialize(data, klass):
         return deserialize_datetime(data)
     elif hasattr(klass, '__origin__'):
         if klass.__origin__ == list:
-            return _deserialize_list(data, klass.__args__[0])
+            return _deserialize_list(data, klass.__args__[0], models_module)
         if klass.__origin__ == dict:
-            return _deserialize_dict(data, klass.__args__[1])
+            return _deserialize_dict(data, klass.__args__[1], models_module)
     else:
-        return deserialize_model(data, klass)
+        return deserialize_model(data, klass, models_module)
 
 
 def _deserialize_primitive(data, klass):
@@ -112,7 +116,12 @@ def deserialize_datetime(string):
         return string
 
 
-def deserialize_model(data, klass):
+def convert_camel_case_to_snake_case(name):
+    s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
+    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
+
+
+def deserialize_model(data, klass, models_module=None):
     """Deserializes list or dict to model.
 
     :param data: dict, list.
@@ -120,7 +129,21 @@ def deserialize_model(data, klass):
     :param klass: class literal.
     :return: model object.
     """
-    instance = klass()
+    if isinstance(klass, str):
+        resolved = getattr(importlib.import_module("{0}.{1}".format(models_module, convert_camel_case_to_snake_case(klass))), klass)
+    elif isinstance(klass, ForwardRef):
+        print(klass)
+        klass = klass.__forward_arg__
+        print(klass)
+        module_name = "{0}.{1}".format(models_module, convert_camel_case_to_snake_case(klass))
+        class_name = klass
+        print(module_name)
+        resolved = getattr(importlib.import_module(module_name), class_name)
+    else:
+        print("Resolving using string: {0}".format(klass))
+        resolved = klass
+
+    instance = resolved()
 
     if not instance.attr_types:
         return data
@@ -132,12 +155,12 @@ def deserialize_model(data, klass):
                 and attr in data \
                 and isinstance(data, (list, dict)):
             value = data[attr]
-            setattr(instance, real_attr, _deserialize(value, attr_type))
+            setattr(instance, real_attr, _deserialize(value, attr_type, models_module))
 
     return instance
 
 
-def _deserialize_list(data, boxed_type):
+def _deserialize_list(data, boxed_type, models_module=None):
     """Deserializes a list and its elements.
 
     :param data: list to deserialize.
@@ -147,11 +170,11 @@ def _deserialize_list(data, boxed_type):
     :return: deserialized list.
     :rtype: list
     """
-    return [_deserialize(sub_data, boxed_type)
+    return [_deserialize(sub_data, boxed_type, models_module)
             for sub_data in data]
 
 
-def _deserialize_dict(data, boxed_type):
+def _deserialize_dict(data, boxed_type, models_module=None):
     """Deserializes a dict and its elements.
 
     :param data: dict to deserialize.
@@ -161,7 +184,7 @@ def _deserialize_dict(data, boxed_type):
     :return: deserialized dict.
     :rtype: dict
     """
-    return {k: _deserialize(v, boxed_type)
+    return {k: _deserialize(v, boxed_type, models_module)
             for k, v in six.iteritems(data)}
 
 
@@ -174,10 +197,13 @@ class Model(object):
     # value is json key in definition.
     attr_map = {}
 
+    def __init__(self):
+        pass
+
     @classmethod
-    def from_dict(cls: typing.Type[T], dikt) -> T:
+    def from_dict(cls: typing.Type[T], dikt, models_module=None) -> T:
         """Returns the dict as a model"""
-        return deserialize_model(dikt, cls)
+        return deserialize_model(dikt, cls, models_module)
 
     def to_dict(self):
         """Returns the model properties as a dict
@@ -225,3 +251,6 @@ class Model(object):
     def __ne__(self, other):
         """Returns true if both objects are not equal"""
         return not self == other
+
+    def __hash__(self):
+        return hash(self.id)

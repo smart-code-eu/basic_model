@@ -8,7 +8,7 @@ with open('requirements.txt') as f:
 
 setuptools.setup(
     name="basic_model",
-    version="0.0.1",
+    version="0.4.1",
     install_requires=requirements,
     author="(C) 2019 SMART CODE, razvoj aplikacij, d.o.o.",
     author_email="info@smartcode.eu",
