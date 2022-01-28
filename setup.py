@@ -8,9 +8,9 @@ with open('requirements.txt') as f:
 
 setuptools.setup(
     name="basic_model",
-    version="0.4.1",
+    version="0.4.2",
     install_requires=requirements,
-    author="(C) 2019 SMART CODE, razvoj aplikacij, d.o.o.",
+    author="(C) 2020 SMART CODE, razvoj aplikacij, d.o.o.",
     author_email="info@smartcode.eu",
     description="Serialization and deserialization made simple",
     long_description=long_description,
